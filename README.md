@@ -133,51 +133,66 @@ Crée un scénario avec :
 
 ---
 
-## 5. Déploiement sur Cloudflare (GitHub + PowerShell)
+## 5. Déploiement automatique (GitHub Actions → Cloudflare)
 
-**Une fois, pour connecter Wrangler à ton compte Cloudflare :**
+Un push sur `main` déclenche automatiquement le build et le déploiement — le
+workflow est déjà présent dans `.github/workflows/deploy.yml`. Il ne reste
+qu'à configurer les accès.
+
+### 5.1 Récupérer les identifiants Cloudflare
+
+1. Dashboard Cloudflare → en haut à droite, ton compte → l'URL contient ton
+   **Account ID** (32 caractères) — copie-le
+2. **My Profile → API Tokens → Create Token** → utilise le modèle "Edit
+   Cloudflare Workers" (ou personnalise avec la permission "Workers Scripts:
+   Edit") → **Continue to summary → Create Token**
+3. Copie le token généré (il ne sera plus jamais réaffiché)
+
+### 5.2 Ajouter les secrets dans GitHub
+
+Sur `github.com/ton-compte/coteouest-ads` → **Settings → Secrets and
+variables → Actions → New repository secret**. Ajoute :
+
+| Nom du secret | Valeur |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | le token créé à l'étape 5.1 |
+| `CLOUDFLARE_ACCOUNT_ID` | ton Account ID Cloudflare |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | ta clé publique Clerk (étape 2) |
+
+### 5.3 Configurer les secrets d'exécution côté Cloudflare (une seule fois)
+
+Ces valeurs sont lues par le Worker à l'exécution, pas au moment du build —
+elles se configurent donc directement sur Cloudflare, pas dans GitHub. Depuis
+ton PC, une seule fois :
 
 ```powershell
 npx wrangler login
-```
-
-**Créer le projet Worker (une seule fois) :**
-
-```powershell
-npm run cf-build
-npx wrangler deploy
-```
-
-Note le nom du Worker et son URL `*.workers.dev` affichés à la fin.
-
-**Configurer les variables d'environnement de production** (ne pas mettre de
-secrets dans `wrangler.toml`, qui est versionné) :
-
-```powershell
 npx wrangler secret put CLERK_SECRET_KEY
 npx wrangler secret put R2_ACCESS_KEY_ID
 npx wrangler secret put R2_SECRET_ACCESS_KEY
 npx wrangler secret put MAKE_WEBHOOK_URL
 ```
 
-(Chaque commande te demande la valeur en interactif.) Les variables
-`NEXT_PUBLIC_*` doivent, elles, être définies dans `wrangler.toml` sous
-`[vars]` ou dans le dashboard Cloudflare (Worker -> Settings -> Variables),
-car elles sont injectées au moment du build.
+### 5.4 C'est tout
 
-**Déploiements suivants**, à chaque mise à jour du code :
+À partir de maintenant :
 
 ```powershell
 git add .
 git commit -m "describe ton changement"
 git push
-npm run deploy
 ```
 
-Pour automatiser complètement (déploiement à chaque push GitHub, sans lancer
-la commande à la main), connecte le repo dans **Cloudflare Dashboard ->
-Workers & Pages -> ton projet -> Settings -> Builds** -- Cloudflare peut alors
-builder et déployer automatiquement sur chaque push vers `main`.
+...déclenche automatiquement le build et le déploiement (visible dans
+l'onglet **Actions** du repo GitHub). Compte 1 à 2 minutes.
+
+**Premier déploiement manuel recommandé** avant de tout automatiser, pour
+vérifier que la config Cloudflare est correcte de bout en bout :
+
+```powershell
+npm run cf-build
+npx wrangler deploy
+```
 
 ---
 
