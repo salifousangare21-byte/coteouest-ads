@@ -1,0 +1,12 @@
+name = "coteouest-ads"
+compatibility_date = "2026-08-01"
+compatibility_flags = ["nodejs_compat"]
+main = ".open-next/worker.js"
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+# Le bucket R2 est piloté via le SDK S3 (clés d'accès dans les variables
+# d'environnement) plutôt qu'un binding natif, pour que le code fonctionne
+# à l'identique en local et une fois déployé.
